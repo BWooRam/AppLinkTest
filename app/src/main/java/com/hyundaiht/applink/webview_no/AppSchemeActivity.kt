@@ -6,19 +6,27 @@ import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
+import androidx.core.app.TaskStackBuilder
 
+/**
+ * AppLink
+ *  - 다중으로 App Link를 열일이 있을까? 그럼 Activity Intent 관련 정책이 필요할듯
+ */
 class AppSchemeActivity : ComponentActivity() {
     private val tag = javaClass.simpleName
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Log.d(tag, "onCreate intent = $intent")
+        Log.d(tag, "onCreate intent url = ${intent.getStringExtra("url")}")
         val redirectEvent = getRedirectEvent(intent) ?: return
 
         startRedirectActivity(
-            context = this@AppSchemeActivity,
             clazz = redirectEvent.clazz,
             bundle = redirectEvent.bundle
         )
+        // ATTENTION: This was auto-generated to handle app links.
+        val appLinkIntent: Intent = intent
+        val appLinkAction: String? = appLinkIntent.action
+        val appLinkData: Uri? = appLinkIntent.data
     }
 
     data class RedirectEvent(
@@ -60,17 +68,32 @@ class AppSchemeActivity : ComponentActivity() {
     }
 
     private fun startRedirectActivity(
-        context: Context,
         bundle: Bundle,
         clazz: Class<out ComponentActivity>
     ) {
-        val intent = Intent(context, clazz).apply {
+        val appLinkIntent = Intent(this@AppSchemeActivity, clazz).apply {
             addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION)
-            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
             putExtra("bundle", bundle)
         }
-        startActivity(intent)
+
+        if (isTaskRoot) {
+            TaskStackBuilder.create(this).apply {
+                val mainIntent = Intent(this@AppSchemeActivity, MainActivity::class.java).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                }
+                addNextIntentWithParentStack(mainIntent)
+                addNextIntent(appLinkIntent)
+            }.startActivities()
+        } else {
+            startActivity(appLinkIntent)
+        }
         finish()
     }
 
+    private fun needAddMainForParent(intent: Intent): Boolean =
+        when (intent.component?.className) {
+            MainActivity::class.java.name -> false
+            else -> true
+        }
 }

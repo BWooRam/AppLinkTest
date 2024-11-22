@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.INTERNET" />
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -14,18 +14,18 @@
         android:theme="@style/Theme.WebViewTest"
         tools:targetApi="31">
         <activity
-            android:name=".webview_no.MainActivity"
+            android:name="com.hyundaiht.applink.webview_no.MainActivity"
             android:exported="true"
             android:label="@string/app_name"
             android:theme="@style/Theme.WebViewTest">
-            <intent-filter>
+            <!--<intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
+            </intent-filter>-->
         </activity>
 
         <activity
-            android:name=".webview.OnlyWebViewActivity"
+            android:name="com.hyundaiht.applink.webview.OnlyWebViewActivity"
             android:exported="true"
             android:label="@string/app_name"
             android:theme="@style/Theme.WebViewTest">
@@ -38,18 +38,40 @@
             </intent-filter>-->
         </activity>
 
-        <activity android:name=".webview_no.AppSchemeActivity"
-            android:exported="true">
+        <activity
+            android:name="com.hyundaiht.applink.navigation.NavigationActivity"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:theme="@style/Theme.WebViewTest">
             <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="myapp" />
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 
-        <activity android:name=".webview_no.Test1Activity" android:exported="true"/>
-        <activity android:name=".webview_no.Test2Activity" android:exported="true"/>
+        <activity
+            android:name="com.hyundaiht.applink.webview_no.AppSchemeActivity"
+            android:exported="true"
+            android:launchMode="singleTop">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="myapp" />
+                <data android:scheme="http" />
+                <data android:scheme="https" />
+                <data android:host="open.login.redirect" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name="com.hyundaiht.applink.webview_no.Test1Activity"
+            android:exported="true" />
+        <activity
+            android:name="com.hyundaiht.applink.webview_no.Test2Activity"
+            android:exported="true" />
     </application>
 
 </manifest>

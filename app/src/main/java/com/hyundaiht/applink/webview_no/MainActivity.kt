@@ -29,12 +29,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.hyundaiht.applink.ui.theme.WebViewTestTheme
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     private val tag = javaClass.simpleName
     private val redirectUrl = arrayListOf(
         "myapp://open.event.redirect?item=id",
-        "myapp://open.login.redirect?data=example"
+        "myapp://open.login.redirect?data=example",
+        "myapp://open.login.redirect?"
     )
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -96,6 +101,23 @@ class MainActivity : ComponentActivity() {
                 }) {
                 Text("Go to Test2Activity")
             }
+            Button(
+                modifier = Modifier.wrapContentSize(),
+                onClick = {
+                    CoroutineScope(Dispatchers.Default).launch {
+                        for (count in 0..3) {
+                            startRedirect(
+                                context = this@MainActivity,
+                                url = redirectUrl[2].plus("data=example$count")
+                            )
+                            val delayTime = 2000 * count
+                            delay(delayTime.toLong())
+                        }
+                    }
+                }) {
+                Text("다중 앱 링크 테스트")
+            }
+
 
             if (!showError) {
                 // WebView를 Compose UI에서 보여주기
@@ -161,7 +183,8 @@ class MainActivity : ComponentActivity() {
     private fun startRedirect(context: Context, url: String) {
         val intent = Intent(context, AppSchemeActivity::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION)
-            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+//            addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             putExtra("url", url)
         }
         startActivity(intent)

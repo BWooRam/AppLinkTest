@@ -35,8 +35,8 @@ class Test2Activity : ComponentActivity() {
         }
     }
 
-    override fun onNewIntent(intent: Intent, caller: ComponentCaller) {
-        super.onNewIntent(intent, caller)
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
         Log.d(tag, "onNewIntent intent =  ${intent.data}")
     }
 
