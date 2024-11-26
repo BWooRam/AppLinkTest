@@ -129,6 +129,7 @@ class NavigationActivity : ComponentActivity() {
                 .fromUri(deepLinkUri)
 //                .setAction()
 //                .setMimeType()
+                .build()
             navController.navigate(request)
         }
 
