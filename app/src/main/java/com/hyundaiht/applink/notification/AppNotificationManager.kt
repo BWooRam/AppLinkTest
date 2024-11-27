@@ -13,6 +13,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.TaskStackBuilder
 import androidx.core.os.bundleOf
+import androidx.navigation.NavController
 import com.hyundaiht.webviewtest.R
 import kotlin.random.Random
 
@@ -101,9 +102,13 @@ object AppNotificationManager {
     private fun createDeepLinkNotification(
         context: Context,
         customNotification: NotificationCompat.Builder,
-        contentIntent: Intent
+        contentIntent: Intent,
+        isNewActivity: Boolean = false
     ): Notification {
-        val pendingIntent = createPendingIntent(context, contentIntent, bundleOf())
+        val pendingIntent = if (isNewActivity)
+            createTaskStackPendingIntent(context, contentIntent, bundleOf())
+        else
+            createBroadcastPendingIntent(context, contentIntent, bundleOf())
 
         return customNotification
             .setSmallIcon(R.drawable.ic_launcher_background)
@@ -115,29 +120,50 @@ object AppNotificationManager {
             .setContentIntent(pendingIntent).build()
     }
 
-    private fun createTaskStackBuilder(context: Context, intent: Intent): TaskStackBuilder {
-        val taskStackBuilder = TaskStackBuilder
-            .create(context)
-            .addNextIntentWithParentStack(intent)
-        return taskStackBuilder
-    }
-
-    private fun createPendingIntent(
+    /**
+     * PendingIntent.getBroadcast를 통한 PendingIntent 생성 방식
+     *
+     * @param context
+     * @param intent
+     * @param args
+     * @return
+     */
+    private fun createBroadcastPendingIntent(
         context: Context,
         intent: Intent,
         args: Bundle?
     ): PendingIntent {
-        var requestCode = 0
-        Log.d(tag, "intentHashCode = ${intent.hashCode()}, argsHashCode = ${args?.hashCode()}")
+        val requestCode = createRequestCode(intent, args)
 
-        if (args != null) {
-            for (key in args.keySet()) {
-                val value = args[key]
-                requestCode = 31 * requestCode + (value?.hashCode() ?: 0)
-            }
-        } else {
-            requestCode = 31 * intent.hashCode()
-        }
+        return PendingIntent.getActivity(
+            context,
+            requestCode,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_ONE_SHOT
+        )
+    }
+
+    private fun createTaskStackBuilder(context: Context, intent: Intent): TaskStackBuilder {
+        val taskStackBuilder = TaskStackBuilder
+            .create(context)
+            .addNextIntentWithParentStack(Intent(intent))
+        return taskStackBuilder
+    }
+
+    /**
+     * TaskStackBuilder addNextIntentWithParentStack를 통한 PendingIntent 생성 방식
+     *
+     * @param context
+     * @param intent
+     * @param args
+     * @return
+     */
+    private fun createTaskStackPendingIntent(
+        context: Context,
+        intent: Intent,
+        args: Bundle?
+    ): PendingIntent {
+        val requestCode = createRequestCode(intent, args)
 
         return createTaskStackBuilder(context, intent.apply {
             if (args != null) {
@@ -147,5 +173,24 @@ object AppNotificationManager {
             requestCode,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )!!
+    }
+
+    private fun createRequestCode(intent: Intent, args: Bundle?): Int {
+        var requestCode = 0
+
+        if (args != null && !args.isEmpty) {
+            for (key in args.keySet()) {
+                val value = args[key]
+                requestCode = 31 * requestCode + (value?.hashCode() ?: 0)
+            }
+        } else {
+            requestCode = 31 * intent.hashCode()
+        }
+
+        Log.d(
+            tag,
+            "createRequestCode intentHashCode = ${intent.hashCode()}, argsHashCode = ${args?.hashCode()}, requestCode = $requestCode"
+        )
+        return requestCode
     }
 }

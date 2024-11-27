@@ -44,7 +44,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Log.d(tag, "onCreate intent =  ${intent.data}")
+        Log.d(tag, "onCreate hashCode = ${hashCode()}, intent =  ${intent.data}")
         enableEdgeToEdge()
         setContent {
             WebViewTestTheme {
@@ -69,7 +69,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onNewIntent(intent: Intent, caller: ComponentCaller) {
         super.onNewIntent(intent, caller)
-        Log.d(tag, "onNewIntent intent =  ${intent.data}")
+        Log.d(tag, "onNewIntent hashCode = ${hashCode()}, intent =  ${intent.data}")
     }
 
     private var stateUrl = mutableStateOf("https://www.google.com")

@@ -19,7 +19,7 @@ class Test1Activity : ComponentActivity() {
     private val tag = javaClass.simpleName
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Log.d(tag, "onCreate intent =  ${intent.getBundleExtra("bundle")?.keySet()}")
+        Log.d(tag, "onCreate hashCode = ${hashCode()}, intent data = ${intent.data}, bundle = ${intent.getBundleExtra("bundle")?.keySet()}")
         enableEdgeToEdge()
         setContent {
             WebViewTestTheme {
@@ -37,7 +37,7 @@ class Test1Activity : ComponentActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        Log.d(tag, "onNewIntent intent data = ${intent.getBundleExtra("bundle")?.getString("data")}")
+        Log.d(tag, "onNewIntent hashCode = ${hashCode()}, intent data = ${intent.data}, bundle = ${intent.getBundleExtra("bundle")?.getString("data")}")
     }
 
 }

@@ -349,7 +349,6 @@ class NavigationActivity : ComponentActivity() {
                 val context = this@NavigationActivity
                 val intent = Intent(context, NavigationActivity::class.java).apply {
                     val randomValue = Random.nextInt(0, 99999)
-                    flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
                     data = Uri.parse("myapp://open.login.redirect/$randomValue")
                 }
                 AppNotificationManager.sendDeepLinkNotification(context, intent)
