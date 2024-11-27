@@ -134,17 +134,8 @@ class NavigationActivity : ComponentActivity() {
     @Composable
     fun AppNavigation() {
         val navController = rememberNavController() // NavController를 생성
-        val rememberDeepLink by remember { deepLinkState }
-
-        LaunchedEffect (rememberDeepLink) {
-            Log.d(tag, "AppNavigation LaunchedEffect rememberDeepLink = $rememberDeepLink")
-            val deepLinkUri = rememberDeepLink.uri ?: return@LaunchedEffect
-
-            val request = NavDeepLinkRequest.Builder
-                .fromUri(deepLinkUri)
-//                .setAction()
-//                .setMimeType()
-                .build()
+        HandleDeepLink { request ->
+            Log.d(tag, "AppNavigation AppNavigation onDeepLink start")
             navController.navigate(request)
         }
 
@@ -154,6 +145,24 @@ class NavigationActivity : ComponentActivity() {
 //            mainNavigation(navController)
             navigation(navController)
         }
+    }
+
+    @Composable
+    fun HandleDeepLink(onDeepLink: (NavDeepLinkRequest) -> Unit) {
+        val rememberDeepLink by remember { deepLinkState }
+
+        LaunchedEffect(rememberDeepLink) {
+            Log.d(tag, "AppNavigation LaunchedEffect rememberDeepLink = $rememberDeepLink")
+            val deepLinkUri = rememberDeepLink.uri ?: return@LaunchedEffect
+
+            val request = NavDeepLinkRequest.Builder
+                .fromUri(deepLinkUri)
+//                .setAction()
+//                .setMimeType()
+                .build()
+            onDeepLink.invoke(request)
+        }
+
     }
 
     @SuppressLint("RestrictedApi")
@@ -186,7 +195,10 @@ class NavigationActivity : ComponentActivity() {
             })
         ) { backStackEntry ->
             val data = backStackEntry.arguments?.getString("data")
-            Log.d(tag, "test_screen1 activityHashcode = ${this@NavigationActivity.hashCode()}, start data = $data")
+            Log.d(
+                tag,
+                "test_screen1 activityHashcode = ${this@NavigationActivity.hashCode()}, data = $data"
+            )
             TestScreen1(data)
         }
 
@@ -362,6 +374,7 @@ class NavigationActivity : ComponentActivity() {
             Button(modifier = Modifier.wrapContentSize(), onClick = {
                 val context = this@NavigationActivity
                 val intent = Intent(context, NavigationActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
                     val randomValue = Random.nextInt(0, 99999)
                     data = Uri.parse("myapp://open.login.redirect/$randomValue")
                 }
