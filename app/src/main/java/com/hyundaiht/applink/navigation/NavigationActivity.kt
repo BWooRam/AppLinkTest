@@ -47,6 +47,10 @@ import androidx.navigation.navArgument
 import androidx.navigation.toRoute
 import com.hyundaiht.applink.notification.AppNotificationManager
 import com.hyundaiht.applink.ui.theme.WebViewTestTheme
+import com.hyundaiht.applink.webview_no.ActivityTestActivity
+import com.hyundaiht.applink.webview_no.MainActivity
+import com.hyundaiht.applink.webview_no.Test1Activity
+import com.hyundaiht.applink.webview_no.Test2Activity
 import kotlinx.serialization.Serializable
 import kotlin.random.Random
 
@@ -344,6 +348,16 @@ class NavigationActivity : ComponentActivity() {
 
                 Text("Go to TestScreen2(MainNavigation)")
             }*/
+
+            Button(modifier = Modifier.wrapContentSize(), onClick = {
+                val context = this@NavigationActivity
+                startActivity(Intent(context, ActivityTestActivity::class.java))
+                startActivity(Intent(context, MainActivity::class.java))
+                startActivity(Intent(context, Test1Activity::class.java))
+                startActivity(Intent(context, Test2Activity::class.java))
+            }) {
+                Text("startActivity ActivityTestActivity")
+            }
 
             Button(modifier = Modifier.wrapContentSize(), onClick = {
                 val context = this@NavigationActivity
