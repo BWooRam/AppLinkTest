@@ -32,20 +32,23 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.currentStateAsState
-import androidx.navigation.ActivityNavigator
 import androidx.navigation.NavController
 import androidx.navigation.NavDeepLink
 import androidx.navigation.NavDeepLinkRequest
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavOptions
+import androidx.navigation.NavType
 import androidx.navigation.Navigator
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.dialog
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import androidx.navigation.toRoute
+import com.hyundaiht.applink.notification.AppNotificationManager
 import com.hyundaiht.applink.ui.theme.WebViewTestTheme
 import kotlinx.serialization.Serializable
+import kotlin.random.Random
 
 class NavigationActivity : ComponentActivity() {
     private val tag = javaClass.simpleName
@@ -54,7 +57,7 @@ class NavigationActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Log.d(tag, "onCreate intent =  ${intent.data}")
+        Log.d(tag, "onCreate hashCode = ${hashCode()}, intent =  ${intent.data}")
         enableEdgeToEdge()
         setContent {
             /*val existingComposeView = window.decorView
@@ -71,22 +74,30 @@ class NavigationActivity : ComponentActivity() {
 
     override fun onStart() {
         super.onStart()
-        Log.d(tag, "onStart")
+        Log.d(tag, "onStart hashCode = ${hashCode()}")
     }
 
     override fun onStop() {
         super.onStop()
-        Log.d(tag, "onStop")
+        Log.d(tag, "onStop hashCode = ${hashCode()}")
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        Log.d(tag, "onDestroy hashCode = ${hashCode()}")
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        val uri = intent.data
-        Log.d(tag, "onNewIntent intent uri = $uri")
+        Log.d(tag, "onNewIntent hashCode = ${hashCode()}, intent =  ${intent.data}")
+        updateRequestedDeepLink(intent)
 
-        if (uri != null) {
-            deepLinkState.value = DeepLink(uri = uri)
-        }
+    }
+
+    private fun updateRequestedDeepLink(intent: Intent) {
+        val deepLinkUri = intent.data ?: return
+        Log.d(tag, "updateRequestedDeepLink intent deepLinkUri = $deepLinkUri")
+        deepLinkState.value = DeepLink(uri = deepLinkUri)
     }
 
     @Serializable
@@ -121,7 +132,7 @@ class NavigationActivity : ComponentActivity() {
         val navController = rememberNavController() // NavController를 생성
         val rememberDeepLink by remember { deepLinkState }
 
-        LaunchedEffect(rememberDeepLink) {
+        LaunchedEffect (rememberDeepLink) {
             Log.d(tag, "AppNavigation LaunchedEffect rememberDeepLink = $rememberDeepLink")
             val deepLinkUri = rememberDeepLink.uri ?: return@LaunchedEffect
 
@@ -133,8 +144,8 @@ class NavigationActivity : ComponentActivity() {
             navController.navigate(request)
         }
 
-        ActivityNavigator
         NavHost(navController = navController, startDestination = "main_screen") {
+            Log.d(tag, "NavHost start activityHashcode = ${this@NavigationActivity.hashCode()}")
             testNavigation(navController)
 //            mainNavigation(navController)
             navigation(navController)
@@ -143,32 +154,46 @@ class NavigationActivity : ComponentActivity() {
 
     @SuppressLint("RestrictedApi")
     private fun NavGraphBuilder.testNavigation(navController: NavController) {
+        //Main
         composable(route = "main_screen") { backStackEntry ->
-            MainScreen(
-                onNavigateToMain = {
-                    val navOptions = NavOptions.Builder().build()
-                    navController.navigate("main_screen", navOptions = navOptions)
-                },
-                onNavigateToTest1 = { navController.navigate("test_screen1") },
+            MainScreen(onNavigateToMain = {
+                val navOptions = NavOptions.Builder().build()
+                navController.navigate("main_screen", navOptions = navOptions)
+            },
+                onNavigateToTest1 = { navController.navigate("test_screen1/testNavigation") },
                 onNavigateToTest2 = { navController.navigate("test_screen2") },
-                onnNavigateToDialog = { navController.navigate("dialog_screen") }
-            )
+                onnNavigateToDialog = { navController.navigate("dialog_screen") })
         }
 
-        val defaultNavDeepLink = NavDeepLink.Builder()
-            .setUriPattern("myapp://open.login.redirect")
+        val test1NavDeepLink = NavDeepLink.Builder()
+            .setUriPattern("myapp://open.login.redirect/{data}")
 //            .setAction()
 //            .setMimeType()
             .build()
-        composable("test_screen1", deepLinks = listOf(defaultNavDeepLink)) { backStackEntry ->
-            TestScreen1()
+
+        //Test1
+        composable(
+            route = "test_screen1/{data}",
+            deepLinks = listOf(test1NavDeepLink),
+            arguments = listOf(navArgument("data") {
+                type = NavType.StringType
+                nullable = true
+                defaultValue = null
+            })
+        ) { backStackEntry ->
+            val data = backStackEntry.arguments?.getString("data")
+            Log.d(tag, "test_screen1 activityHashcode = ${this@NavigationActivity.hashCode()}, start data = $data")
+            TestScreen1(data)
         }
+
+        //Test2
         composable("test_screen2") { backStackEntry ->
             TestScreen2(onNavigateToTest2 = { navController.navigate("test_screen2") })
         }
+
+        //Dialog
         dialog(
-            route = "dialog_screen",
-            dialogProperties = DialogProperties(
+            route = "dialog_screen", dialogProperties = DialogProperties(
                 dismissOnBackPress = true,
                 dismissOnClickOutside = true,
                 usePlatformDefaultWidth = false
@@ -182,7 +207,12 @@ class NavigationActivity : ComponentActivity() {
         }
     }
 
-    // This screen will be displayed as a dialog
+    /**
+     * SettingsScreen
+     *
+     * @param confirmButtonClick
+     * @param dismissButtonClick
+     */
     @Composable
     fun SettingsScreen(confirmButtonClick: () -> Unit, dismissButtonClick: () -> Unit) {
         AlertDialog(onDismissRequest = { dismissButtonClick.invoke() },
@@ -204,22 +234,20 @@ class NavigationActivity : ComponentActivity() {
             })
     }
 
-
     private fun NavGraphBuilder.navigation(navController: NavController) {
         composable<Navigation> { backStackEntry ->
             val data = backStackEntry.toRoute<Navigation>()
             Log.d("$tag NavGraph", "Navigation data = ${data.friendsList}")
-            MainScreen(
-                onNavigateToMain = { navController.navigate(Navigation) },
-                onNavigateToTest1 = { navController.navigate("test_screen1") },
+            MainScreen(onNavigateToMain = { navController.navigate(Navigation) },
+                onNavigateToTest1 = { navController.navigate("test_screen1/navigation") },
                 onNavigateToTest2 = { navController.navigate("test_screen2") },
-                onnNavigateToDialog = { navController.navigate("dialog_screen") }
-            )
+                onnNavigateToDialog = { navController.navigate("dialog_screen") })
         }
     }
 
     @SuppressLint("RestrictedApi")
     private fun NavGraphBuilder.mainNavigation(navController: NavController) {
+        //Main
         composable<MainNavigation.Main> { backStackEntry ->
             Log.d("$tag NavGraph", "MainNavigation.Main")
             MainScreen(
@@ -229,18 +257,31 @@ class NavigationActivity : ComponentActivity() {
                 onnNavigateToDialog = { navController.navigate("dialog_screen") }
             )
         }
+
+        //Test1
         composable<MainNavigation.Test1> { backStackEntry ->
             val data = backStackEntry.toRoute<MainNavigation.Test1>()
-            Log.d("$tag NavGraph", "MainNavigation.Test1 data = $data")
-            TestScreen1()
+            Log.d("$tag NavGraph", "MainNavigation.Test1 data = ${data.data}")
+            TestScreen1(data.data)
         }
+
+        //Test2
         composable<MainNavigation.Test2> { backStackEntry ->
             Log.d("$tag NavGraph", "MainNavigation.Test2")
             TestScreen2(onNavigateToTest2 = { navController.navigate(MainNavigation.Test2) })
         }
+
         navigation(navController)
     }
 
+    /**
+     * MainScreen
+     *
+     * @param onNavigateToMain
+     * @param onNavigateToTest1
+     * @param onNavigateToTest2
+     * @param onnNavigateToDialog
+     */
     @Composable
     fun MainScreen(
         onNavigateToMain: () -> Unit,
@@ -287,8 +328,7 @@ class NavigationActivity : ComponentActivity() {
                 onNavigateToMain.invoke()
             }) {
                 Text("Go to MainScreen(Navigation)")
-            }
-            /*
+            }/*
             Button(modifier = Modifier.wrapContentSize(), onClick = {
                 navController.safeNavigation(
                     MainNavigation.Test1
@@ -301,8 +341,22 @@ class NavigationActivity : ComponentActivity() {
             Button(modifier = Modifier.wrapContentSize(), onClick = {
                 navController.navigate(MainNavigation.Test2)
             }) {
+
                 Text("Go to TestScreen2(MainNavigation)")
             }*/
+
+            Button(modifier = Modifier.wrapContentSize(), onClick = {
+                val context = this@NavigationActivity
+                val intent = Intent(context, NavigationActivity::class.java).apply {
+                    val randomValue = Random.nextInt(0, 99999)
+                    flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
+                    data = Uri.parse("myapp://open.login.redirect/$randomValue")
+                }
+                AppNotificationManager.sendDeepLinkNotification(context, intent)
+            }) {
+                Text("sendDeepLinkNotification")
+            }
+
             Button(modifier = Modifier.wrapContentSize(), onClick = {
                 onnNavigateToDialog.invoke()
             }) {
@@ -329,8 +383,13 @@ class NavigationActivity : ComponentActivity() {
         }
     }
 
+    /**
+     * TestScreen1
+     *
+     * @param data
+     */
     @Composable
-    fun TestScreen1() {
+    fun TestScreen1(data: String?) {
         val rememberString by remember { mutableStateOf("test1") }
         val index by remember { mutableStateOf("88888") }
         LifecycleStartEffect(rememberString) {
@@ -355,14 +414,28 @@ class NavigationActivity : ComponentActivity() {
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-
+            Text(text = data ?: "")
         }
     }
 
+    /**
+     * Info
+     *
+     * @property id
+     * @property name
+     * @property email
+     */
     data class Info(
-        val id: String, val name: String, var email: String? = null
+        val id: String,
+        val name: String,
+        var email: String? = null
     )
 
+    /**
+     * TestScreen2
+     *
+     * @param onNavigateToTest2
+     */
     @Composable
     fun TestScreen2(
         onNavigateToTest2: () -> Unit,
