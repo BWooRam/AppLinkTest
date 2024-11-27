@@ -25,10 +25,10 @@ object AppNotificationManager {
     val NOTI_ID_DEFAULT = 1000
 
     @SuppressLint("NotificationPermission", "MissingPermission")
-    fun sendDeepLinkNotification(context: Context, contentIntent: Intent) {
+    fun sendDeepLinkNotification(context: Context, contentIntent: Intent, isNewActivity: Boolean = false) {
         val randomId = Random.nextInt(0, 10000)
         val builder = createNotificationBuilder(context)
-        val notification = createDeepLinkNotification(context, builder, contentIntent)
+        val notification = createDeepLinkNotification(context, builder, contentIntent, isNewActivity)
         NotificationManagerCompat.from(context).notify(randomId, notification)
     }
 

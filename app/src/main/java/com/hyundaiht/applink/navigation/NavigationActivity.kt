@@ -367,7 +367,18 @@ class NavigationActivity : ComponentActivity() {
                 }
                 AppNotificationManager.sendDeepLinkNotification(context, intent)
             }) {
-                Text("sendDeepLinkNotification")
+                Text("update Activity sendDeepLinkNotification")
+            }
+
+            Button(modifier = Modifier.wrapContentSize(), onClick = {
+                val context = this@NavigationActivity
+                val intent = Intent(context, NavigationActivity::class.java).apply {
+                    val randomValue = Random.nextInt(0, 99999)
+                    data = Uri.parse("myapp://open.login.redirect/$randomValue")
+                }
+                AppNotificationManager.sendDeepLinkNotification(context, intent, true)
+            }) {
+                Text("create Activity sendDeepLinkNotification")
             }
 
             Button(modifier = Modifier.wrapContentSize(), onClick = {
