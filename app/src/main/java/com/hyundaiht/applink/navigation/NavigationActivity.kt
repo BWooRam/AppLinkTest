@@ -10,7 +10,10 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -26,6 +29,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
@@ -98,17 +102,31 @@ class NavigationActivity : ComponentActivity() {
 
     }
 
+    /**
+     * updateRequestedDeepLink
+     *
+     * @param intent
+     */
     private fun updateRequestedDeepLink(intent: Intent) {
         val deepLinkUri = intent.data ?: return
         Log.d(tag, "updateRequestedDeepLink intent deepLinkUri = $deepLinkUri")
         deepLinkState.value = DeepLink(uri = deepLinkUri)
     }
 
+    /**
+     * 중첩 클래스 테스트를 위한 Data Class
+     *
+     * @property friendsList
+     */
     @Serializable
     class Navigation(
         val friendsList: List<String>
     )
 
+    /**
+     * Safe Args로 네비게이션 탐색을 위한 Data Class
+     *
+     */
     sealed class MainNavigation {
         @Serializable
         data object Main : MainNavigation()
@@ -125,6 +143,11 @@ class NavigationActivity : ComponentActivity() {
         data object Test2 : MainNavigation()
     }
 
+    /**
+     * DeepLink
+     *
+     * @property uri
+     */
     data class DeepLink(
         val uri: Uri? = null
     )
@@ -147,6 +170,11 @@ class NavigationActivity : ComponentActivity() {
         }
     }
 
+    /**
+     * onNewIntent로 온 DeepLink 처리를 위한 메소드
+     *
+     * @param onDeepLink
+     */
     @Composable
     fun HandleDeepLink(onDeepLink: (NavDeepLinkRequest) -> Unit) {
         val rememberDeepLink by remember { deepLinkState }
@@ -340,11 +368,7 @@ class NavigationActivity : ComponentActivity() {
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Button(modifier = Modifier.wrapContentSize(), onClick = {
-                onNavigateToMain.invoke()
-            }) {
-                Text("Go to MainScreen(Navigation)")
-            }/*
+            /*
             Button(modifier = Modifier.wrapContentSize(), onClick = {
                 navController.safeNavigation(
                     MainNavigation.Test1
@@ -368,8 +392,9 @@ class NavigationActivity : ComponentActivity() {
                 startActivity(Intent(context, Test1Activity::class.java))
                 startActivity(Intent(context, Test2Activity::class.java))
             }) {
-                Text("startActivity ActivityTestActivity")
+                Text("다른 4종 Activity 띄우기")
             }
+            Spacer(Modifier.fillMaxWidth().height(40.dp))
 
             Button(modifier = Modifier.wrapContentSize(), onClick = {
                 val context = this@NavigationActivity
@@ -380,9 +405,9 @@ class NavigationActivity : ComponentActivity() {
                 }
                 AppNotificationManager.sendDeepLinkNotification(context, intent)
             }) {
-                Text("update Activity sendDeepLinkNotification")
+                Text("DeepLink Notification 테스트\n이미 존재하는 Activity Intent 업데이트")
             }
-
+            Spacer(Modifier.fillMaxWidth().height(5.dp))
             Button(modifier = Modifier.wrapContentSize(), onClick = {
                 val context = this@NavigationActivity
                 val intent = Intent(context, NavigationActivity::class.java).apply {
@@ -391,23 +416,29 @@ class NavigationActivity : ComponentActivity() {
                 }
                 AppNotificationManager.sendDeepLinkNotification(context, intent, true)
             }) {
-                Text("create Activity sendDeepLinkNotification")
+                Text("DeepLink Notification 테스트\n새로 Activity 생성 후 Intent 업데이트")
             }
 
+            Spacer(Modifier.fillMaxWidth().height(40.dp))
+            Button(modifier = Modifier.wrapContentSize(), onClick = {
+                onNavigateToMain.invoke()
+            }) {
+                Text("Navigation 테스트 Safe Args 형태 MainScreen로 이동")
+            }
             Button(modifier = Modifier.wrapContentSize(), onClick = {
                 onnNavigateToDialog.invoke()
             }) {
-                Text("Go to dialog_screen")
+                Text("Navigation 테스트 dialog_screen로 이동")
             }
             Button(modifier = Modifier.wrapContentSize(), onClick = {
                 onNavigateToTest1.invoke()
             }) {
-                Text("Go to test_screen1")
+                Text("Navigation 테스트 test_screen1로 이동")
             }
             Button(modifier = Modifier.wrapContentSize(), onClick = {
                 onNavigateToTest2.invoke()
             }) {
-                Text("Go to test_screen2")
+                Text("Navigation 테스트 test_screen2로 이동")
             }
         }
     }
@@ -479,6 +510,7 @@ class NavigationActivity : ComponentActivity() {
     ) {
         var name by remember { mutableStateOf("test2") }
         val index by remember { mutableStateOf("99999") }
+        //많은 양에 데이터가 Remember에 들어왔을때 테스트를 위한 변수
         val data by remember { mutableStateOf(createInfo(10000)) }
         LifecycleStartEffect(name) {
             onStopOrDispose {
@@ -524,6 +556,12 @@ class NavigationActivity : ComponentActivity() {
         }
     }
 
+    /**
+     * 테스트 더미 랜덤 생성
+     *
+     * @param count
+     * @return
+     */
     private fun createInfo(count: Int): List<Info> {
         val temp: MutableList<Info> = mutableListOf()
         for (index in 0 until count) {
@@ -532,6 +570,13 @@ class NavigationActivity : ComponentActivity() {
         return temp
     }
 
+    /**
+     * Compose Remember 초기화가 됐는지 테스트를 위한 코드
+     * 그러나, Android 문서 상에 적혀있는데로 런타임으로 코드해도 결과가 안나옴
+     *
+     * @param currentComposer
+     */
+    @Deprecated("동작 안함")
     private fun viewCompositionGroups(currentComposer: Composer) {
         val size = currentComposer.compositionData.compositionGroups.count()
         Log.d(tag, "ViewCompositionGroups size = $size")
