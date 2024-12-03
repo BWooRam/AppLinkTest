@@ -2,8 +2,11 @@ package com.hyundaiht.applink.webview
 
 import android.app.ComponentCaller
 import android.content.Intent
+import android.graphics.Bitmap
 import android.os.Bundle
 import android.util.Log
+import android.webkit.JsResult
+import android.webkit.WebChromeClient
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
@@ -31,6 +34,8 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.hyundaiht.applink.security.WebViewSecurity
+import com.hyundaiht.applink.security.WebViewSecurity.safeLoadUrl
 import com.hyundaiht.applink.ui.theme.WebViewTestTheme
 
 class OnlyWebViewActivity : ComponentActivity() {
@@ -55,7 +60,7 @@ class OnlyWebViewActivity : ComponentActivity() {
 
     @Composable
     fun WebViewExample(navController: NavController) {
-        var url by remember { mutableStateOf("https://www.google.com") }
+        var url by remember { mutableStateOf("file:///android_asset/sq.html") }
         var showError by remember { mutableStateOf(false) }
         Column(
             modifier = Modifier
@@ -63,9 +68,13 @@ class OnlyWebViewActivity : ComponentActivity() {
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // 버튼 1: 구글로 변경
-            Button(onClick = { url = "myapp://open?data=example" }) {
-                Text("Go to Test")
+            // 버튼 1: 커스텀 스킴으로 이동
+            Button(onClick = { url = "myapp://open/callback?data=example" }) {
+                Text("Go to myapp")
+            }
+            // 버튼 2: 안전하지 않은 URL로 변경
+            Button(onClick = { url = "https://naver.com" }) {
+                Text("Go to naver")
             }
             if (showError) {
             } else {
@@ -75,15 +84,58 @@ class OnlyWebViewActivity : ComponentActivity() {
                         .fillMaxSize(1f),
                     factory = { context ->
                         WebView(context).apply {
+                            webChromeClient = object : WebChromeClient(){
+                                override fun onJsAlert(
+                                    view: WebView?,
+                                    url: String?,
+                                    message: String?,
+                                    result: JsResult?
+                                ): Boolean {
+                                    return super.onJsAlert(view, url, message, result)
+                                }
+                            }
                             webViewClient = object : WebViewClient() {
-                                override fun onReceivedError(view: WebView?, request: WebResourceRequest?, error: WebResourceError?) {
+                                @Deprecated("Deprecated in Java")
+                                override fun shouldOverrideUrlLoading(
+                                    view: WebView?,
+                                    url: String?
+                                ): Boolean {
+                                    val isWhite = WebViewSecurity.checkWhiteList(url)
+                                    Log.d("MainActivity", "shouldOverrideUrlLoading isWhite = $isWhite")
+                                    return isWhite
+                                }
+
+                                override fun shouldOverrideUrlLoading(
+                                    view: WebView?,
+                                    request: WebResourceRequest?
+                                ): Boolean {
+                                    val isWhite = WebViewSecurity.checkWhiteList(url)
+                                    Log.d("MainActivity", "shouldOverrideUrlLoading isWhite = $isWhite")
+                                    return isWhite
+                                }
+
+                                override fun onPageStarted(
+                                    view: WebView?,
+                                    url: String?,
+                                    favicon: Bitmap?
+                                ) {
+                                    super.onPageStarted(view, url, favicon)
+                                    Log.d("MainActivity", "onPageStarted url = $url")
+                                }
+
+                                override fun onReceivedError(
+                                    view: WebView?,
+                                    request: WebResourceRequest?,
+                                    error: WebResourceError?
+                                ) {
                                     super.onReceivedError(view, request, error)
                                     showError = true
                                     // 로딩 실패 시 URL을 처리하는 로직
                                     val url = request?.url.toString()
                                     println("Error loading URL: $url, Error: ${error?.description}")
                                     if (url.startsWith("myapp://")) {
-                                        val name = request?.url?.getQueryParameter("data") ?: "Unknown"
+                                        val name =
+                                            request?.url?.getQueryParameter("data") ?: "Unknown"
                                         // URL이 "myapp://"으로 시작하면 NewScreen으로 이동
                                         navController.navigate("new_screen/$name")
                                     }
@@ -93,19 +145,23 @@ class OnlyWebViewActivity : ComponentActivity() {
                                         println("Unknown URL scheme: $url")
                                     }
                                 }
-                                override fun onReceivedHttpError(view: WebView?, request: WebResourceRequest?, errorResponse: WebResourceResponse?) {
+
+                                override fun onReceivedHttpError(
+                                    view: WebView?,
+                                    request: WebResourceRequest?,
+                                    errorResponse: WebResourceResponse?
+                                ) {
                                     super.onReceivedHttpError(view, request, errorResponse)
                                     // HTTP 오류 시 URL을 처리하는 로직
                                     val url = request?.url.toString()
                                     println("HTTP Error loading URL: $url, Error: ${errorResponse?.statusCode}")
                                 }
                             }
-                            loadUrl(url) // 초기 URL 로드
+                            safeLoadUrl(url) // URL 변경 시마다 새로 로드
                         }
                     },
                     update = { webView ->
-                        Log.d("MainActivity", "webView = $webView")
-                        webView.loadUrl(url) // URL 변경 시마다 새로 로드
+                        webView.safeLoadUrl(url) // URL 변경 시마다 새로 로드
                     }
                 )
             }
@@ -126,9 +182,14 @@ class OnlyWebViewActivity : ComponentActivity() {
             }
         }
     }
+
     @Composable
     fun NewScreen(name: String) {
-        Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
             Text("Welcome to the new screen! Received name: $name")
         }
     }

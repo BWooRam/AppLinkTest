@@ -1,0 +1,24 @@
+<html>
+<head>
+    <script>
+        onload = function () {
+            showAlert();
+            loadScript();
+        }
+
+
+        //JS
+        function loadScript(url, callback)
+        {
+            alert('XSS%20PoC%20by%20Just%20Mobile%20Sec');
+        }
+
+        function showAlert() {
+            alert("Button clicked!");
+        }
+    </script>
+</head>
+<body>replace this
+<button onclick="showAlert()">Click Me</button>
+</body>
+</html>
