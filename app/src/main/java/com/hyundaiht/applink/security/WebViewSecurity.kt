@@ -96,6 +96,8 @@ object WebViewSecurity {
         } else {
             changeSafeSetting(true)
         }
+
+//        changeSafeSetting(false)  //보안 테스트 용
     }
 
     @SuppressLint("SetJavaScriptEnabled")
