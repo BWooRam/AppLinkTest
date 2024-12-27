@@ -17,8 +17,8 @@ object WebViewSecurity {
      * @return
      */
     fun checkWhiteList(request: WebResourceRequest?): Boolean {
-        val uri = request?.url
-        return checkWhiteList(uri.toString())
+        val uri = request?.url ?: throw NullPointerException("WebResourceRequest url is null")
+        return checkWhiteList(uri)
     }
 
     /**
@@ -34,6 +34,16 @@ object WebViewSecurity {
         }
 
         val uri = Uri.parse(requestUrl)
+        return checkWhiteList(uri)
+    }
+
+    /**
+     * checkWhiteList
+     *
+     * @param uri
+     * @return
+     */
+    fun checkWhiteList(uri: Uri): Boolean {
         val scheme = uri.scheme
         val host = uri.host
 
@@ -79,6 +89,18 @@ object WebViewSecurity {
         "open",
         "www.google.com",
         "" //sq.html을 읽기 위한 테스트용
+    )
+
+    /**
+     * getBlackList
+     *
+     * @return
+     */
+    fun getBlackList(): List<String> = listOf(
+        "myapp://open.login.redirect1/event",
+        "myapp://open.login.redirect.test/event",
+        "http://open.login.redirect/event",
+        "https://open.login.redirect/event"
     )
 
     /**

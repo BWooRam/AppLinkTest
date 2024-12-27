@@ -50,6 +50,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.navigation.toRoute
 import com.hyundaiht.applink.notification.AppNotificationManager
+import com.hyundaiht.applink.security.WebViewSecurity
 import com.hyundaiht.applink.ui.theme.WebViewTestTheme
 import com.hyundaiht.applink.webview_no.ActivityTestActivity
 import com.hyundaiht.applink.webview_no.MainActivity
@@ -127,6 +128,7 @@ class NavigationActivity : ComponentActivity() {
      * Safe Args로 네비게이션 탐색을 위한 Data Class
      *
      */
+    @Serializable
     sealed class MainNavigation {
         @Serializable
         data object Main : MainNavigation()
@@ -150,7 +152,15 @@ class NavigationActivity : ComponentActivity() {
      */
     data class DeepLink(
         val uri: Uri? = null
-    )
+    ) {
+        enum class Navigation(val uri: Uri) {
+            Test1(Uri.parse("myapp://open.login.redirect/event?data={data}"))
+        }
+
+        companion object {
+            val ALL_DEEP_LINK_NAVIGATION = arrayOf(DeepLink.Navigation.Test1)
+        }
+    }
 
     private val deepLinkState = mutableStateOf(DeepLink())
 
@@ -166,6 +176,7 @@ class NavigationActivity : ComponentActivity() {
             Log.d(tag, "NavHost start activityHashcode = ${this@NavigationActivity.hashCode()}")
             testNavigation(navController)
 //            mainNavigation(navController)
+            deeplinkNavigation(navController)
             navigation(navController)
         }
     }
@@ -182,15 +193,27 @@ class NavigationActivity : ComponentActivity() {
         LaunchedEffect(rememberDeepLink) {
             Log.d(tag, "AppNavigation LaunchedEffect rememberDeepLink = $rememberDeepLink")
             val deepLinkUri = rememberDeepLink.uri ?: return@LaunchedEffect
+            val isWhite = true
+            Log.d(tag, "AppNavigation LaunchedEffect isWhite = $isWhite")
 
-            val request = NavDeepLinkRequest.Builder
-                .fromUri(deepLinkUri)
+            if (isWhite) {
+                val result = DeepLink.ALL_DEEP_LINK_NAVIGATION.find {
+                    val isSameScheme = it.uri.scheme == deepLinkUri.scheme
+                    val isSameHost = it.uri.host ==  deepLinkUri.host
+                    val isSamePath = it.uri.path ==  deepLinkUri.path
+                    Log.d(tag, "AppNavigation LaunchedEffect Navigation scheme = ${it.uri.scheme}, host = ${it.uri.host}, path = ${it.uri.path}")
+                    Log.d(tag, "AppNavigation LaunchedEffect deepLinkUri scheme = ${deepLinkUri.scheme}, host = ${deepLinkUri.host}, path = ${deepLinkUri.path}")
+                    return@find isSameScheme && isSameHost && isSamePath
+                } ?: return@LaunchedEffect
+
+                val request = NavDeepLinkRequest.Builder.fromUri(deepLinkUri)
 //                .setAction()
 //                .setMimeType()
-                .build()
-            onDeepLink.invoke(request)
-        }
+                    .build()
 
+                onDeepLink.invoke(request)
+            }
+        }
     }
 
     @SuppressLint("RestrictedApi")
@@ -204,30 +227,6 @@ class NavigationActivity : ComponentActivity() {
                 onNavigateToTest1 = { navController.navigate("test_screen1/testNavigation") },
                 onNavigateToTest2 = { navController.navigate("test_screen2") },
                 onnNavigateToDialog = { navController.navigate("dialog_screen") })
-        }
-
-        val test1NavDeepLink = NavDeepLink.Builder()
-            .setUriPattern("myapp://open.login.redirect/{data}")
-//            .setAction()
-//            .setMimeType()
-            .build()
-
-        //Test1
-        composable(
-            route = "test_screen1/{data}",
-            deepLinks = listOf(test1NavDeepLink),
-            arguments = listOf(navArgument("data") {
-                type = NavType.StringType
-                nullable = true
-                defaultValue = null
-            })
-        ) { backStackEntry ->
-            val data = backStackEntry.arguments?.getString("data")
-            Log.d(
-                tag,
-                "test_screen1 activityHashcode = ${this@NavigationActivity.hashCode()}, data = $data"
-            )
-            TestScreen1(data)
         }
 
         //Test2
@@ -278,6 +277,33 @@ class NavigationActivity : ComponentActivity() {
             })
     }
 
+    @SuppressLint("RestrictedApi")
+    private fun NavGraphBuilder.deeplinkNavigation(navController: NavController) {
+        val test1NavDeepLink = NavDeepLink.Builder()
+            .setUriPattern(DeepLink.Navigation.Test1.uri.toString())
+//            .setAction()
+//            .setMimeType()
+            .build()
+
+        //DeepLink1
+        composable(
+            route = "${DeepLink.Navigation.Test1.uri.host}${DeepLink.Navigation.Test1.uri.path}?data={data}",
+            deepLinks = listOf(test1NavDeepLink),
+            arguments = listOf(navArgument("data") {
+                type = NavType.StringType
+                nullable = true
+                defaultValue = null
+            })
+        ) { backStackEntry ->
+            val data = backStackEntry.arguments?.getString("data")
+            Log.d(
+                tag,
+                "test_screen1 activityHashcode = ${this@NavigationActivity.hashCode()}, data = $data"
+            )
+            TestScreen1(data)
+        }
+    }
+
     private fun NavGraphBuilder.navigation(navController: NavController) {
         composable<Navigation> { backStackEntry ->
             val data = backStackEntry.toRoute<Navigation>()
@@ -294,12 +320,10 @@ class NavigationActivity : ComponentActivity() {
         //Main
         composable<MainNavigation.Main> { backStackEntry ->
             Log.d("$tag NavGraph", "MainNavigation.Main")
-            MainScreen(
-                onNavigateToMain = { navController.navigate(MainNavigation.Main) },
+            MainScreen(onNavigateToMain = { navController.navigate(MainNavigation.Main) },
                 onNavigateToTest1 = { navController.navigate(MainNavigation.Test1) },
                 onNavigateToTest2 = { navController.navigate(MainNavigation.Test2) },
-                onnNavigateToDialog = { navController.navigate("dialog_screen") }
-            )
+                onnNavigateToDialog = { navController.navigate("dialog_screen") })
         }
 
         //Test1
@@ -394,32 +418,66 @@ class NavigationActivity : ComponentActivity() {
             }) {
                 Text("다른 4종 Activity 띄우기")
             }
-            Spacer(Modifier.fillMaxWidth().height(40.dp))
+            Spacer(
+                Modifier
+                    .fillMaxWidth()
+                    .height(40.dp)
+            )
 
             Button(modifier = Modifier.wrapContentSize(), onClick = {
                 val context = this@NavigationActivity
                 val intent = Intent(context, NavigationActivity::class.java).apply {
                     flags = Intent.FLAG_ACTIVITY_NEW_TASK
                     val randomValue = Random.nextInt(0, 99999)
-                    data = Uri.parse("myapp://open.login.redirect/$randomValue")
+                    data = Uri.parse("myapp://open.login.redirect/event?data=$randomValue")
                 }
                 AppNotificationManager.sendDeepLinkNotification(context, intent)
             }) {
                 Text("DeepLink Notification 테스트\n이미 존재하는 Activity Intent 업데이트")
             }
-            Spacer(Modifier.fillMaxWidth().height(5.dp))
+
+            Spacer(
+                Modifier
+                    .fillMaxWidth()
+                    .height(5.dp)
+            )
+
             Button(modifier = Modifier.wrapContentSize(), onClick = {
                 val context = this@NavigationActivity
                 val intent = Intent(context, NavigationActivity::class.java).apply {
                     val randomValue = Random.nextInt(0, 99999)
-                    data = Uri.parse("myapp://open.login.redirect/$randomValue")
+                    data = Uri.parse("myapp://open.login.redirect/event?data=$randomValue")
                 }
                 AppNotificationManager.sendDeepLinkNotification(context, intent, true)
             }) {
                 Text("DeepLink Notification 테스트\n새로 Activity 생성 후 Intent 업데이트")
             }
 
-            Spacer(Modifier.fillMaxWidth().height(40.dp))
+            Spacer(
+                Modifier
+                    .fillMaxWidth()
+                    .height(5.dp)
+            )
+
+            Button(modifier = Modifier.wrapContentSize(), onClick = {
+                val context = this@NavigationActivity
+                val intent = Intent(context, NavigationActivity::class.java).apply {
+                    val blackList = WebViewSecurity.getBlackList()
+                    val randomValue = Random.nextInt(0, blackList.size)
+                    Log.d(tag, "잘못된 DeepLink Intent 업데이트 ${blackList[randomValue]}?data=$randomValue")
+
+                    data = Uri.parse("${blackList[randomValue]}?data=$randomValue")
+                }
+                AppNotificationManager.sendDeepLinkNotification(context, intent, false)
+            }) {
+                Text("DeepLink Notification 테스트\n잘못된 DeepLink Intent 업데이트")
+            }
+
+            Spacer(
+                Modifier
+                    .fillMaxWidth()
+                    .height(40.dp)
+            )
             Button(modifier = Modifier.wrapContentSize(), onClick = {
                 onNavigateToMain.invoke()
             }) {
@@ -494,9 +552,7 @@ class NavigationActivity : ComponentActivity() {
      * @property email
      */
     data class Info(
-        val id: String,
-        val name: String,
-        var email: String? = null
+        val id: String, val name: String, var email: String? = null
     )
 
     /**
