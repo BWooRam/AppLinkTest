@@ -1,5 +1,6 @@
 package com.hyundaiht.applink.security
 
+import android.net.Uri
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Assert
 import org.junit.Test
@@ -24,6 +25,7 @@ class WebViewSecurityTest {
         "FILE://opens/",
         "File://open/",
         "File://openList/",
+        "File://openList/test1/test2/test3",
         "javascript:(function(){})"
     )
 
@@ -58,5 +60,12 @@ class WebViewSecurityTest {
             println("checkWhiteList_기본_동작_테스트 whiteUrl = $whiteUrl, isWhite = $isWhite")
             Assert.assertTrue(isWhite)
         }
+    }
+
+    @Test
+    fun `checkWhiteList_Uri_Path_테스트`() {
+        val uri = Uri.parse("File://openList/test1/test2/test3")
+        val uriPath = uri.pathSegments
+        println("checkWhiteList_Uri_Path_테스트 uri = $uri, uriPath = $uriPath")
     }
 }
