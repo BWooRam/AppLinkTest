@@ -14,7 +14,7 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.TaskStackBuilder
 import androidx.core.os.bundleOf
 import androidx.navigation.NavController
-import com.hyundaiht.webviewtest.R
+import com.hyundaiht.applink.R
 import kotlin.random.Random
 
 

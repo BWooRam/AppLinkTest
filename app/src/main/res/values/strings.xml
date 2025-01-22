@@ -1,3 +1,14 @@
 <resources>
     <string name="app_name">AppLinkTest</string>
+    <string name="short_cut_short_label1">Short1</string>
+    <string name="short_cut_long_label1">Short Cut Long Label Test1</string>
+    <string name="short_cut_disabled_message1">shortcutDisabled1</string>
+
+    <string name="short_cut_short_label2">Short2</string>
+    <string name="short_cut_long_label2">Short Cut Long Label Test2</string>
+    <string name="short_cut_disabled_message2">shortcutDisabled2</string>
+
+    <string name="short_cut_short_label3">Short3</string>
+    <string name="short_cut_long_label3">Short Cut Long Label Test3</string>
+    <string name="short_cut_disabled_message3">shortcutDisabled3</string>
 </resources>

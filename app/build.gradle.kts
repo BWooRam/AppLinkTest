@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "com.hyundaiht.webviewtest"
+    namespace = "com.hyundaiht.applink"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.hyundaiht.webviewtest"
+        applicationId = "com.hyundaiht.applink"
         minSdk = 28
         targetSdk = 34
         versionCode = 1
@@ -44,6 +44,7 @@ android {
         kotlinCompilerExtensionVersion = "1.5.1"
     }
     packaging {
+
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
